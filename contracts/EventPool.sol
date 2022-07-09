@@ -29,12 +29,6 @@ contract EventPool {
     mapping (uint256 => Events) public allEvents;
     mapping (address => mapping(uint256 => uint256)) public tickets;
 
-    //MODIFIERS
-    modifier eventOwner(uint256 _id) {
-        require(allEvents[_id].admin == msg.sender);
-        _;
-    }
-
     constructor() {
        priceFeed = AggregatorV3Interface(0x8A753747A1Fa494EC906cE90E9f37563A8AF630e);
     }
@@ -50,11 +44,12 @@ contract EventPool {
     /**
     @dev create event
      */
-    function createEvent(string memory _name, uint256 _date, uint256 _price, uint256 _numberOfTickets) 
+    function createEvent(string memory _name, uint256 _date, uint256 _price, uint256 _numberOfTickets, uint256 _ticketCount) 
     external {
-        
+        require(_date > block.timestamp, 'can only organize event at a future date');
+        require(_ticketCount > 0, 'can only organize event with at least 1 ticket');
         uint256 evDate = block.timestamp + _date;
-        allEvents[eventId] = Events(msg.sender, _name, evDate, _price, 0, _numberOfTickets);
+        allEvents[eventId] = Events(msg.sender, _name, evDate, _price, _numberOfTickets, _ticketCount);
         eventId++;
 
         emit CreateEvent(msg.sender, _price);
@@ -67,7 +62,7 @@ contract EventPool {
     external
     eventOwner(_eventId) {
         uint256 myEventDate = allEvents[_eventId].date;
-        assert(_date > myEventDate);
+        require(_date > myEventDate);
         allEvents[_eventId].date = myEventDate + _date;
     }
 
@@ -86,32 +81,47 @@ contract EventPool {
     @dev uses chainlink price feed to convert between fiat currency USD and ETH
 
      */
-    function buyTicket(uint256 _eventId) 
+    function buyTicket(uint256 _eventId, uint256 quantity) 
+    eventExist(_eventId)
+    eventActive(_eventId)
     external
-    payable {
-    
-        
-        
-        uint256 ticketPrice = allEvents[_eventId].price * 10 ** 18; //ticket set price for the event
+    payable { 
+        uint256 ticketPrice = (allEvents[_eventId].price * 10 ** 18) * quantity; //ticket set price for the event
         require(getETHPrice(msg.value) >= ticketPrice); //checks that enough eth
-        tickets[msg.sender][_eventId] = tickets[msg.sender][_eventId] + 1; //increment number of ticket for this event
-        allEvents[_eventId].ticketCount = allEvents[_eventId].ticketCount + 1;
-        allEvents[_eventId].ticketRemaining = allEvents[_eventId].ticketRemaining - 1;
+        require(allEvents[_eventId].ticketRemaining >= quantity, 'Not enough ticket left');
+        tickets[msg.sender][_eventId] += quantity; //increment number of ticket for this event
+        allEvents[_eventId].ticketRemaining -= quantity;
         emit BuyTicket(msg.sender, _eventId);
 
     }
 
-    function sellTicket(uint256 _eventId, address _beneficiary) 
+    function sellTicket(uint256 _eventId, address _beneficiary, uint256 _quantity) 
+    eventExist(_eventId)
+    eventActive(_eventId)
     external {
-        require(tickets[msg.sender][_eventId] > 0); //ensure sender already has a ticket
-
-        tickets[msg.sender][_eventId] = tickets[msg.sender][_eventId] - 1; //derement senders ticket value
-        tickets[_beneficiary][_eventId] = tickets[msg.sender][_eventId] + 1; //increment beneficiaries 
+        require(tickets[msg.sender][_eventId] >= _quantity, 'not enough ticket');
+        tickets[msg.sender][_eventId] -= _quantity; //derement senders ticket value
+        tickets[_beneficiary][_eventId] += _quantity; //increment beneficiaries 
 
         //implement
         emit SellTicket(msg.sender,_beneficiary, _eventId);
 
     }
-    
 
+
+      //MODIFIERS
+    modifier eventOwner(uint256 _id) {
+        require(allEvents[_id].admin == msg.sender);
+        _;
+    }
+
+    modifier eventExist(uint id) {
+      require(allEvents[id].date != 0, 'this event does not exist');
+      _;
+    }
+    modifier eventActive(uint id) {
+      require(block.timestamp < allEvents[id].date, 'event must be active');
+      _;
+    }
+    
 }

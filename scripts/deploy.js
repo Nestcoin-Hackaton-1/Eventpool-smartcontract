@@ -1,24 +1,17 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// When running the script with `npx hardhat run <script>` you'll find the Hardhat
-// Runtime Environment's members available in the global scope.
-const hre = require("hardhat");
+// Import ethers from Hardhat package
+const { ethers } = require("hardhat");
 
 async function main() {
-  // Hardhat always runs the compile task when running scripts with its command
-  // line interface.
-  //
-  // If this script is run directly using `node` you may want to call compile
-  // manually to make sure everything is compiled
-  // await hre.run('compile');
 
   // We get the contract to deploy
-  const EventPool = await hre.ethers.getContractFactory("EventPool");
+  const EventPool = await ethers.getContractFactory("EventPool");
+
+
   const eventpool = await EventPool.deploy();
 
+  // here we deploy the contract
   await eventpool.deployed();
-
+  // print the address of the deployed contract
   console.log("Eventpool deployed to:", eventpool.address);
 }
 
