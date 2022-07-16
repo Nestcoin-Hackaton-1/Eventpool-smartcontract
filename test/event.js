@@ -21,7 +21,7 @@ describe("Event Pool", function () {
     const event1 = await event
       .connect(user2)
       .createEvent(
-        "Event",
+        "GDG Fest Event",
         dateInSecs1,
         dateInSecs1,
         ethers.utils.parseEther("10"),
@@ -45,7 +45,7 @@ describe("Event Pool", function () {
 
   it("Should have correct event name", async function () {
     const firstEvent = await event.callStatic.getEvent(0);
-    const expectedValue = "Event";
+    const expectedValue = "GDG Fest Event";
     // assert
     // expect
     assert.equal(firstEvent.name.toString(), expectedValue);
@@ -100,22 +100,22 @@ describe("Event Pool", function () {
     //expect(firstEvent.name.toString()).to.equal(expectedValue);
   });
 
-  it("Should send token to admin", async function () {
-    const [owner, user1, user2, user3] = await ethers.getSigners();
-    busd.transfer(user1.address, ethers.utils.parseEther("100"));
-    await busd
-      .connect(user1)
-      .approve(event.address, ethers.utils.parseEther("100"));
-    await event.connect(user1).buyTicket(0);
+  // it("Should send token to admin", async function () {
+  //   const [owner, user1, user2, user3] = await ethers.getSigners();
+  //   busd.transfer(user1.address, ethers.utils.parseEther("100"));
+  //   await busd
+  //     .connect(user1)
+  //     .approve(event.address, ethers.utils.parseEther("100"));
+  //   await event.connect(user1).buyTicket(0);
 
-    const adminbalance = await busd.balanceOf(user2.address);
-    const expectedValue = "9000000000000000000";
+  //   const adminbalance = await busd.balanceOf(user2.address);
+  //   const expectedValue = "9000000000000000000";
 
-    // assert
-    // expect
-    assert.equal(adminbalance.toString(), expectedValue);
-    //expect(firstEvent.name.toString()).to.equal(expectedValue);
-  });
+  //   // assert
+  //   // expect
+  //   assert.equal(adminbalance.toString(), expectedValue);
+  //   //expect(firstEvent.name.toString()).to.equal(expectedValue);
+  // });
 
   it("Should send token to contract", async function () {
     const [owner, user1, user2, user3] = await ethers.getSigners();
