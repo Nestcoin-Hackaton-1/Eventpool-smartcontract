@@ -3,14 +3,14 @@ const { ethers } = require("hardhat");
 
 async function main() {
   // We get the contract to deploy
-  const EventPool = await ethers.getContractFactory("EventPool");
+  const BUSDContract = await ethers.getContractFactory("BUSD");
 
-  const eventpool = await EventPool.deploy("0x7BDc2059d686971191040E0Ae8311b94A3542689");
+  const busdContract = await BUSDContract.deploy();
 
   // here we deploy the contract
-  await eventpool.deployed();
+  await busdContract.deployed();
   // print the address of the deployed contract
-  console.log("Eventpool deployed to:", eventpool.address);
+  console.log("BUSDContract deployed to:", busdContract.address);
 
   console.log("Sleeping.....");
   // Wait for etherscan to notice that the contract has been deployed
@@ -18,8 +18,8 @@ async function main() {
 
   // Verify the contract after deploying
   await hre.run("verify:verify", {
-    address: eventpool.address,
-    constructorArguments: ["0x7BDc2059d686971191040E0Ae8311b94A3542689"],
+    address: busdContract.address,
+    constructorArguments: [],
   });
 
   function sleep(ms) {

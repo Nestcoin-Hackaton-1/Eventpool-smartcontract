@@ -11,6 +11,8 @@ contract EventPool {
     Events[] public EventsList;
     BUSD internal token;
     uint256 internal constant cutFee = 10;
+    uint256 internal perBalance;
+    address public owner;
 
     struct Events {
         address admin;
@@ -43,13 +45,17 @@ contract EventPool {
         uint256 _id
     );
 
+    event EventSalesWithdrawal(address indexed owner, uint256  amount);
+
     //MAPPING
     mapping(uint256 => Events) public allEvents;
     mapping(uint256 => Resell) public allResell;
     mapping(address => mapping(uint256 => uint256)) public tickets;
+    mapping(address => uint256) public salesBalance;
 
     constructor(address token_addr) {
-        token = BUSD(token_addr);
+      owner = msg.sender;
+      token = BUSD(token_addr);
     }
 
     /**
@@ -188,7 +194,7 @@ contract EventPool {
     {
         uint256 ticketPrice = allEvents[_eventId].price; //ticket set price for the event
         uint256 Per = (ticketPrice / 100) * (cutFee);
-        uint256 actualTicketPrice = ticketPrice - Per;
+        uint256 actualPriceTicketSold = ticketPrice - Per;
         require(
             tickets[msg.sender][_eventId] != 1,
             "You already have a ticket"
@@ -198,18 +204,22 @@ contract EventPool {
             allEvents[_eventId].ticketRemaining >= 1,
             "Not enough ticket left"
         );
+        // require(
+        //     token.transferFrom(
+        //         msg.sender,
+        //         allEvents[_eventId].admin,
+        //         actualPriceTicketSold
+        //     ),
+        //     "An error occured, make sure you approve the contract"
+        // );
         require(
-            token.transferFrom(
-                msg.sender,
-                allEvents[_eventId].admin,
-                actualTicketPrice
-            ),
+            token.transferFrom(msg.sender, address(this), ticketPrice),
             "An error occured, make sure you approve the contract"
         );
-        require(
-            token.transferFrom(msg.sender, address(this), Per),
-            "An error occured, make sure you approve the contract"
-        );
+
+        salesBalance[allEvents[_eventId].admin] += actualPriceTicketSold;
+        perBalance += Per;
+
 
         tickets[msg.sender][_eventId] = 1; //increment number of ticket for this event
         allEvents[_eventId].ticketRemaining -= 1;
@@ -241,7 +251,7 @@ contract EventPool {
     ) external eventExist(_eventId) eventActive(_eventId) {
         uint256 ticketPrice = allResell[_resellId].price; //ticket set price for the event
         uint256 Per = (ticketPrice / 100) * (cutFee);
-        uint256 actualTicketPrice = ticketPrice - Per;
+        uint256 actualPriceTicketSold = ticketPrice - Per;
 
         require(
             tickets[msg.sender][_eventId] != 1,
@@ -254,12 +264,12 @@ contract EventPool {
             token.transferFrom(
                 msg.sender,
                 allResell[_resellId].admin,
-                actualTicketPrice
+                actualPriceTicketSold
             ),
             "An error occured, make sure you approve the contract"
         );
         require(
-            token.transferFrom(msg.sender, address(this), Per),
+            token.transferFrom(msg.sender, address(this), ticketPrice),
             "An error occured, make sure you approve the contract"
         );
 
@@ -281,7 +291,50 @@ contract EventPool {
         return false;
     }
 
+    function SalesBalance(address _address) external view returns (uint256) {
+      require(_address ==  msg.sender, "you are not authorized to view another address earnings");
+      return salesBalance[_address];
+    }
+
+    function PerBalance() external onlyOwner view returns (uint256) {
+      return perBalance;
+    }
+
+    function withdrawSaleBalance(uint256 _amount) external {
+      require(_amount >= salesBalance[msg.sender], "Insufficient Funds");
+      require(
+        token.transferFrom(
+          address(this),
+          msg.sender,
+          _amount
+        ),
+        "An error occured, make sure you approve the contract"
+        );
+        
+        salesBalance[msg.sender] -= _amount;
+      emit EventSalesWithdrawal(msg.sender, _amount);
+    }
+
+
+    function withdrawPerBalance(uint256 _amount, address _address) external onlyOwner {
+      require(_amount >= perBalance, "Insufficient Funds");
+      require(
+        token.transfer(
+          _address,
+          _amount
+        ),
+        "An error occured, make sure you approve the contract"
+        );
+
+      perBalance -= _amount;
+    }
+
     //MODIFIERS
+    modifier onlyOwner() {
+      require(msg.sender == owner, 'only owner');
+      _;
+    }
+
     modifier eventOwner(uint256 _id) {
         require(allEvents[_id].admin == msg.sender);
         _;
