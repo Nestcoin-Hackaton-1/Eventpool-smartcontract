@@ -305,11 +305,13 @@ contract EventPool {
       require(
         token.transferFrom(
           address(this),
-          salesBalance[msg.sender],
+          msg.sender,
           _amount
         ),
         "An error occured, make sure you approve the contract"
         );
+        
+        salesBalance[msg.sender] -= _amount;
       emit EventSalesWithdrawal(msg.sender, _amount);
     }
 
@@ -323,6 +325,8 @@ contract EventPool {
         ),
         "An error occured, make sure you approve the contract"
         );
+
+      perBalance -= _amount;
     }
 
     //MODIFIERS
