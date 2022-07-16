@@ -52,10 +52,9 @@ contract EventPool {
     mapping(uint256 => Resell) public allResell;
     mapping(address => mapping(uint256 => uint256)) public tickets;
     mapping(address => uint256) public salesBalance;
-    mapping(address => uint256) public perBalance;
 
     constructor(address token_addr) {
-      owner = msg.sender
+      owner = msg.sender;
       token = BUSD(token_addr);
     }
 
@@ -219,7 +218,7 @@ contract EventPool {
         );
 
         salesBalance[allEvents[_eventId].admin] += actualPriceTicketSold;
-        perBalance += per;
+        perBalance += Per;
 
 
         tickets[msg.sender][_eventId] = 1; //increment number of ticket for this event
@@ -292,16 +291,17 @@ contract EventPool {
         return false;
     }
 
-    function SalesBalance() external view returns (uint256) {
-      return salesBalance[msg.sender]
+    function SalesBalance(address _address) external view returns (uint256) {
+      require(_address ==  msg.sender, "you are not authorized to view another address earnings");
+      return salesBalance[_address];
     }
 
     function PerBalance() external onlyOwner view returns (uint256) {
-      return perBalance
+      return perBalance;
     }
 
     function withdrawSaleBalance(uint256 _amount) external {
-      require(_amount >= salesBalance[msg.sender], "Insufficient Funds")
+      require(_amount >= salesBalance[msg.sender], "Insufficient Funds");
       require(
         token.transferFrom(
           address(this),
@@ -309,22 +309,20 @@ contract EventPool {
           _amount
         ),
         "An error occured, make sure you approve the contract"
-        )
+        );
       emit EventSalesWithdrawal(msg.sender, _amount);
-      return true
     }
 
 
     function withdrawPerBalance(uint256 _amount, address _address) external onlyOwner {
-      require(_amount >= perBalance, "Insufficient Funds")
+      require(_amount >= perBalance, "Insufficient Funds");
       require(
         token.transfer(
           _address,
           _amount
         ),
         "An error occured, make sure you approve the contract"
-        )
-      return true
+        );
     }
 
     //MODIFIERS
