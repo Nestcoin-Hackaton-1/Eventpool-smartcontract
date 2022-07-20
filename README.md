@@ -12,6 +12,8 @@
 
 - [Contract](#contract)
 
+- [Testing](#testing)
+
 - [Usage](#usage)
 
 - [Contributing](#contributing)
@@ -40,44 +42,57 @@ Eventpool Contract Address - 0xbC6b1605eAFc28E94e38875A97E7d461436Caf81
 
 BUSD Contract Address - 0x12426a6f6187f36ddfc0850b5a86aaa85fd42187
 
+## Testing
+
+In order to test the application, Test busd will be needed.
+
+Contract to grab test busd - 0x83B939A4B7739BE7592259f8921c430C320457dD
+
+You can use grab function to get busd needed to successfully test the application
+
+## Usage
 
 # How to setup the repo
 
 # Pre-requisite
+
 1. You need to have [Node.js](https://nodejs.org/en/) installed.
 2. You should also install [VS Code](https://code.visualstudio.com/)
 
 # Running the application locally
-1. Clone this repository
+
+1.  Clone this repository
 
     `git clone https://github.com/Nestcoin-Hackaton-1/Eventpool-smartcontract.git`
 
-2. Install dependencies
+2.  Install dependencies
 
     `cd Eventpool-smartcontract`
 
     `npm install`
-3. Setup your env from .env.example
 
-4. Compile and Deploy the busd contract with the script provided
+3.  Setup your env from .env.example
 
-      `npx hardhat run scripts/deploybusd.js --network [network you intend to use]`
+4.  Compile and Deploy the busd contract with the script provided
 
-5. Copy the Contract address derived from the busd deployment and insert it into the deploy script for the EventPool
+    `npx hardhat run scripts/deploybusd.js --network [network you intend to use]`
 
-      `const eventpool = await EventPool.deploy(
+5.  Copy the Contract address derived from the busd deployment and insert it into the deploy script for the EventPool
+
+        `const eventpool = await EventPool.deploy(
+
     "BUSD Contract address"
-  );`
+    );`
 
-      `  await hre.run("verify:verify", {
+        `  await hre.run("verify:verify", {
+
     address: eventpool.address,
     constructorArguments: ["BUSD Contract address"],
-  });`
+    });`
 
+6.  Compile and Deploy the EventPool contract with the script provided
 
-6. Compile and Deploy the EventPool contract with the script provided
-
-      `npx hardhat run scripts/deploy.js --network [network you intend to use]`
+    `npx hardhat run scripts/deploy.js --network [network you intend to use]`
 
 ## Contributing
 
