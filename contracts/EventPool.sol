@@ -3,16 +3,17 @@ pragma solidity ^0.8.0;
 
 import "./Busd.sol";
 import "hardhat/console.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract EventPool {
+contract EventPool is ReentrancyGuard {
     //STATE VARIABLES
     uint256 private eventId;
     uint256 private resellId;
-    Events[] public EventsList;
     BUSD internal token;
     uint256 internal constant cutFee = 10;
     uint256 internal perBalance;
     address public owner;
+    bool public isPaused = true;
 
     struct Events {
         address admin;
@@ -20,12 +21,12 @@ contract EventPool {
         string name;
         string category;
         string image;
-        string description;
         uint256 startdate; //in number days
         uint256 enddate; //in number days
         uint256 price;
         uint256 ticketCount;
         uint256 ticketRemaining;
+        string location;
     }
 
     struct Resell {
@@ -34,6 +35,7 @@ contract EventPool {
         uint256 eventId;
         uint256 price;
         bool sold;
+        uint256 startdate;
     }
 
     //EVENTS
@@ -45,7 +47,7 @@ contract EventPool {
         uint256 _id
     );
 
-    event EventSalesWithdrawal(address indexed owner, uint256  amount);
+    event EventSalesWithdrawal(address indexed owner, uint256 amount);
 
     //MAPPING
     mapping(uint256 => Events) public allEvents;
@@ -54,8 +56,8 @@ contract EventPool {
     mapping(address => uint256) public salesBalance;
 
     constructor(address token_addr) {
-      owner = msg.sender;
-      token = BUSD(token_addr);
+        owner = msg.sender;
+        token = BUSD(token_addr);
     }
 
     /**
@@ -69,8 +71,8 @@ contract EventPool {
         uint256 _ticketCount,
         string memory _category,
         string memory _image,
-        string memory _description
-    ) external returns (bool) {
+        string memory _location
+    ) external isNotPaused returns (bool) {
         require(
             _startdate > block.timestamp,
             "can only organize event at a future date"
@@ -85,12 +87,12 @@ contract EventPool {
             _name,
             _category,
             _image,
-            _description,
             _startdate,
             _enddate,
             _price,
             _ticketCount,
-            _ticketCount
+            _ticketCount,
+            _location
         );
 
         allEvents[eventId] = event1;
@@ -136,6 +138,28 @@ contract EventPool {
         return items;
     }
 
+    function fetchMyTickets() public view returns (Events[] memory) {
+        uint256 itemCount = 0;
+        uint256 currentIndex = 0;
+
+        for (uint256 i = 0; i < eventId; i++) {
+            if (tickets[msg.sender][allEvents[i].eventId] == 1) {
+                itemCount += 1;
+            }
+        }
+
+        Events[] memory items = new Events[](itemCount);
+        for (uint256 i = 0; i < eventId; i++) {
+            if (tickets[msg.sender][allEvents[i].eventId] == 1) {
+                uint256 currentId = i;
+                Events storage currentItem = allEvents[currentId];
+                items[currentIndex] = currentItem;
+                currentIndex += 1;
+            }
+        }
+        return items;
+    }
+
     function getEvent(uint256 id) public view returns (Events memory) {
         return allEvents[id];
     }
@@ -150,8 +174,71 @@ contract EventPool {
         Resell[] memory items = new Resell[](resellId);
         for (uint256 i = 0; i < resellId; i++) {
             uint256 currentId = i;
-            if (allResell[currentId].sold == false) {
+            if (
+                allResell[currentId].sold == false &&
+                allResell[currentId].startdate > block.timestamp
+            ) {
                 Resell storage currentItem = allResell[currentId];
+                items[currentIndex] = currentItem;
+                currentIndex += 1;
+            }
+        }
+        return items;
+    }
+
+    function checkIfListed(uint256 id, address addr)
+        public
+        view
+        returns (bool)
+    {
+        for (uint256 i = 0; i < resellId; i++) {
+            uint256 currentId = i;
+            if (
+                allResell[currentId].admin == addr &&
+                allResell[currentId].eventId == id
+            ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function fetchMyResell() public view returns (Resell[] memory) {
+        uint256 itemCount = 0;
+        uint256 currentIndex = 0;
+
+        for (uint256 i = 0; i < resellId; i++) {
+            if (allResell[i].admin == msg.sender) {
+                itemCount += 1;
+            }
+        }
+
+        Resell[] memory items = new Resell[](itemCount);
+        for (uint256 i = 0; i < resellId; i++) {
+            if (allResell[i].admin == msg.sender) {
+                uint256 currentId = i;
+                Resell storage currentItem = allResell[currentId];
+                items[currentIndex] = currentItem;
+                currentIndex += 1;
+            }
+        }
+        return items;
+    }
+
+    function fetchMyResellEvent() public view returns (Events[] memory) {
+        uint256 itemCount = 0;
+        uint256 currentIndex = 0;
+
+        for (uint256 i = 0; i < resellId; i++) {
+            if (allResell[i].admin == msg.sender && allResell[i].sold == true) {
+                itemCount += 1;
+            }
+        }
+
+        Events[] memory items = new Events[](itemCount);
+        for (uint256 i = 0; i < resellId; i++) {
+            if (allResell[i].admin == msg.sender && allResell[i].sold == true) {
+                Events storage currentItem = allEvents[allResell[i].eventId];
                 items[currentIndex] = currentItem;
                 currentIndex += 1;
             }
@@ -166,7 +253,7 @@ contract EventPool {
         uint256 _eventId,
         uint256 _startdate,
         uint256 _enddate
-    ) external eventOwner(_eventId) {
+    ) external isNotPaused eventOwner(_eventId) {
         uint256 myEventStartDate = allEvents[_eventId].startdate;
         uint256 myEventEndDate = allEvents[_eventId].enddate;
 
@@ -188,8 +275,10 @@ contract EventPool {
     function buyTicket(uint256 _eventId)
         external
         payable
+        isNotPaused
         eventExist(_eventId)
         eventActive(_eventId)
+        nonReentrant
         returns (bool)
     {
         uint256 ticketPrice = allEvents[_eventId].price; //ticket set price for the event
@@ -220,7 +309,6 @@ contract EventPool {
         salesBalance[allEvents[_eventId].admin] += actualPriceTicketSold;
         perBalance += Per;
 
-
         tickets[msg.sender][_eventId] = 1; //increment number of ticket for this event
         allEvents[_eventId].ticketRemaining -= 1;
         emit BuyTicket(msg.sender, _eventId);
@@ -229,6 +317,7 @@ contract EventPool {
 
     function listTicket(uint256 _eventId, uint256 price)
         external
+        isNotPaused
         ticketExist(_eventId)
         eventExist(_eventId)
         eventActive(_eventId)
@@ -238,7 +327,8 @@ contract EventPool {
             resellId,
             _eventId,
             price,
-            false
+            false,
+            allEvents[_eventId].startdate
         );
         allResell[resellId] = tick;
         resellId++;
@@ -248,7 +338,13 @@ contract EventPool {
         uint256 _resellId,
         uint256 _eventId,
         address owner_addr
-    ) external eventExist(_eventId) eventActive(_eventId) {
+    )
+        external
+        isNotPaused
+        eventExist(_eventId)
+        eventActive(_eventId)
+        nonReentrant
+    {
         uint256 ticketPrice = allResell[_resellId].price; //ticket set price for the event
         uint256 Per = (ticketPrice / 100) * (cutFee);
         uint256 actualPriceTicketSold = ticketPrice - Per;
@@ -269,7 +365,7 @@ contract EventPool {
             "An error occured, make sure you approve the contract"
         );
         require(
-            token.transferFrom(msg.sender, address(this), ticketPrice),
+            token.transferFrom(msg.sender, address(this), Per),
             "An error occured, make sure you approve the contract"
         );
 
@@ -292,47 +388,59 @@ contract EventPool {
     }
 
     function SalesBalance(address _address) external view returns (uint256) {
-      require(_address ==  msg.sender, "you are not authorized to view another address earnings");
-      return salesBalance[_address];
-    }
-
-    function PerBalance() external onlyOwner view returns (uint256) {
-      return perBalance;
-    }
-
-    function withdrawSaleBalance(uint256 _amount) external {
-      require(_amount >= salesBalance[msg.sender], "Insufficient Funds");
-      require(
-        token.transferFrom(
-          address(this),
-          msg.sender,
-          _amount
-        ),
-        "An error occured, make sure you approve the contract"
+        require(
+            _address == msg.sender,
+            "you are not authorized to view another address earnings"
         );
-        
+        return salesBalance[_address];
+    }
+
+    function PerBalance() external view onlyOwner returns (uint256) {
+        return perBalance;
+    }
+
+    function withdrawSaleBalance(uint256 _amount)
+        external
+        isNotPaused
+        nonReentrant
+    {
+        require(salesBalance[msg.sender] >= _amount, "Insufficient Funds");
+        require(
+            token.transfer(msg.sender, _amount),
+            "An error occured, make sure you approve the contract"
+        );
+
         salesBalance[msg.sender] -= _amount;
-      emit EventSalesWithdrawal(msg.sender, _amount);
+        emit EventSalesWithdrawal(msg.sender, _amount);
     }
 
-
-    function withdrawPerBalance(uint256 _amount, address _address) external onlyOwner {
-      require(_amount >= perBalance, "Insufficient Funds");
-      require(
-        token.transfer(
-          _address,
-          _amount
-        ),
-        "An error occured, make sure you approve the contract"
+    function withdrawPerBalance(uint256 _amount, address _address)
+        external
+        isNotPaused
+        nonReentrant
+        onlyOwner
+    {
+        require(_amount >= perBalance, "Insufficient Funds");
+        require(
+            token.transfer(_address, _amount),
+            "An error occured, make sure you approve the contract"
         );
 
-      perBalance -= _amount;
+        perBalance -= _amount;
+    }
+
+    function unpause() public onlyOwner {
+        isPaused = false;
+    }
+
+    function pause() public onlyOwner {
+        isPaused = true;
     }
 
     //MODIFIERS
     modifier onlyOwner() {
-      require(msg.sender == owner, 'only owner');
-      _;
+        require(msg.sender == owner, "only owner");
+        _;
     }
 
     modifier eventOwner(uint256 _id) {
@@ -357,4 +465,15 @@ contract EventPool {
         require(tickets[msg.sender][id] == 1, "must have a ticket");
         _;
     }
+
+    modifier isNotPaused() {
+        require(!isPaused, "Operatons currently paused");
+        _;
+    }
+
+    // Function to receive Ether. msg.data must be empty
+    receive() external payable {}
+
+    // Fallback function is called when msg.data is not empty
+    fallback() external payable {}
 }

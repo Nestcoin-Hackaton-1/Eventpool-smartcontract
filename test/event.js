@@ -15,6 +15,7 @@ describe("Event Pool", function () {
     await busd.deployed();
 
     event = await eventFactory.deploy(busd.address);
+    await event.unpause();
     const dateInSecs1 = Math.floor(new Date("2022-08-12").getTime() / 1000);
     const dateInSecs2 = Math.floor(new Date("2022-10-10").getTime() / 1000);
 
@@ -28,7 +29,7 @@ describe("Event Pool", function () {
         100,
         "Tech",
         "none",
-        "Tech event"
+        "lagos"
       );
 
     const event2 = await event.createEvent(
@@ -39,7 +40,7 @@ describe("Event Pool", function () {
       100,
       "Social",
       "none",
-      "Tech event"
+      "lagos"
     );
   });
 
@@ -117,7 +118,7 @@ describe("Event Pool", function () {
   //   //expect(firstEvent.name.toString()).to.equal(expectedValue);
   // });
 
-  it("Should send token to contract", async function () {
+  /* it("Should send token to contract", async function () {
     const [owner, user1, user2, user3] = await ethers.getSigners();
     busd.transfer(user1.address, ethers.utils.parseEther("100"));
     await busd
@@ -131,7 +132,7 @@ describe("Event Pool", function () {
     // expect
     assert.equal(contractBalance.toString(), value);
     //expect(firstEvent.name.toString()).to.equal(expectedValue);
-  });
+  }); */
 
   it("Should be able to list ticket", async function () {
     const [owner, user1, user2, user3] = await ethers.getSigners();
@@ -162,13 +163,17 @@ describe("Event Pool", function () {
       .approve(event.address, ethers.utils.parseEther("100"));
     await event.connect(user1).buyTicket(0);
     await event.connect(user1).listTicket(0, ethers.utils.parseEther("20"));
-    await event.connect(user3).sellTicket(0, 0, user1.address);
+    //await event.connect(user3).sellTicket(0, 0, user1.address);
 
     const firstEvent = await event.connect(user3).hasTicket(0, user3.address);
     const firstEvent2 = await event.connect(user1).hasTicket(0, user1.address);
+    //const firstEvent3 = await event.connect(user1).fetchMyResellEvent();
+    //const firstEvent4 = await event.connect(user1).fetchAllFlipped();
 
     console.log(firstEvent);
     console.log(firstEvent2);
+    //console.log(firstEvent3);
+    //console.log(firstEvent4);
 
     //const expectedValue = "0";
     // assert

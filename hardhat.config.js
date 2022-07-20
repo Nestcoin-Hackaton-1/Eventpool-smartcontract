@@ -32,4 +32,10 @@ module.exports = {
     noColors: true,
     coinmarketcap: COINMARKETCAP_API_KEY,
   },
+  settings: {
+    optimizer: {
+      enabled: true,
+      runs: 100,
+    },
+  },
 };

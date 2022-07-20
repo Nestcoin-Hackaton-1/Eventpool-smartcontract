@@ -5,7 +5,9 @@ async function main() {
   // We get the contract to deploy
   const EventPool = await ethers.getContractFactory("EventPool");
 
-  const eventpool = await EventPool.deploy("0x7BDc2059d686971191040E0Ae8311b94A3542689");
+  const eventpool = await EventPool.deploy(
+    "0x12426A6F6187F36ddfc0850B5a86Aaa85FD42187"
+  );
 
   // here we deploy the contract
   await eventpool.deployed();
@@ -19,7 +21,7 @@ async function main() {
   // Verify the contract after deploying
   await hre.run("verify:verify", {
     address: eventpool.address,
-    constructorArguments: ["0x7BDc2059d686971191040E0Ae8311b94A3542689"],
+    constructorArguments: ["0x12426A6F6187F36ddfc0850B5a86Aaa85FD42187"],
   });
 
   function sleep(ms) {
