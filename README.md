@@ -20,7 +20,7 @@
 
 ## Introduction
 
-EventZea is a Web3 application that allows creator to creater events and users to buy event tickets, it also gives users the ability to sell their ticket at any amount they want. Event creator can view their earnings and withdraw their earnings whenever they want. Payment from tickets of users that listed their ticket are receive directy into their address. Event creator can use the event check page to verify those who are attending their event.
+EventZea is a Web3 application that allows creators to create events and users to buy event tickets, it also gives users the ability to sell their tickets at any amount they want. Event creator can view their earnings and withdraw their earnings whenever they want. Payment from tickets of users that listed their tickets are received directly into their wallets. Event creators can use the event check page to verify those who are attending their event.
 
 The smart contract takes 10% of any ticket sales.
 
