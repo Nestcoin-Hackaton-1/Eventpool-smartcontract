@@ -40,21 +40,44 @@ Eventpool Contract Address - 0xbC6b1605eAFc28E94e38875A97E7d461436Caf81
 
 BUSD Contract Address - 0x12426a6f6187f36ddfc0850b5a86aaa85fd42187
 
-## Usage
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts.
+# How to setup the repo
 
-Try running some of the following tasks:
+# Pre-requisite
+1. You need to have [Node.js](https://nodejs.org/en/) installed.
+2. You should also install [VS Code](https://code.visualstudio.com/)
 
-```shell
-npx hardhat accounts
-npx hardhat compile
-npx hardhat clean
-npx hardhat test
-npx hardhat node
-node scripts/sample-script.js
-npx hardhat help
-```
+# Running the application locally
+1. Clone this repository
+
+    `git clone https://github.com/Nestcoin-Hackaton-1/Eventpool-smartcontract.git`
+
+2. Install dependencies
+
+    `cd Eventpool-smartcontract`
+
+    `npm install`
+3. Setup your env from .env.example
+
+4. Compile and Deploy the busd contract with the script provided
+
+      `npx hardhat run scripts/deploybusd.js --network [network you intend to use]`
+
+5. Copy the Contract address derived from the busd deployment and insert it into the deploy script for the EventPool
+
+      `const eventpool = await EventPool.deploy(
+    "BUSD Contract address"
+  );`
+
+      `  await hre.run("verify:verify", {
+    address: eventpool.address,
+    constructorArguments: ["BUSD Contract address"],
+  });`
+
+
+6. Compile and Deploy the EventPool contract with the script provided
+
+      `npx hardhat run scripts/deploy.js --network [network you intend to use]`
 
 ## Contributing
 
